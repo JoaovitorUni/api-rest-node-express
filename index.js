@@ -1,10 +1,8 @@
 import express from 'express';
-import Database from 'better-sqlite3';
-import { getRoot, getUsuarios, getUsuarioById } from './app/handlers/handlers.js';
-import { migrate, populate } from './app/utils/db.js';
+import { getRoot, getUsuarios, getUsuarioById, createUsuario, updateUsuario, deleteUsuario } from './app/handlers/handlers.js';
+import { db, migrate, populate } from './app/utils/db.js';
 
 const app = express();
-const db = new Database('./db.sqlite');
 const port = 3000;
 
 migrate(db);
@@ -15,11 +13,15 @@ const logMiddleware = (req, res, next) => {
   next();
 }
 
+app.use(express.json());
 app.use(logMiddleware);
 
 app.get('/', getRoot);
 app.get('/api/usuarios', getUsuarios);
 app.get('/api/usuarios/:id', getUsuarioById);
+app.post('/api/usuarios', createUsuario);
+app.put('/api/usuarios/:id', updateUsuario);
+app.delete('/api/usuarios/:id', deleteUsuario);
 
 app.listen(port, () => {
   console.log(`Servidor rodando em http://localhost:${port}`);

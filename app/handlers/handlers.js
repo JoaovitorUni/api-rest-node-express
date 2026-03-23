@@ -1,12 +1,4 @@
-import { orderLogic } from '../utils/utils.js';
-
-// Mock de Usuários
-export const usuarios = [
-  { id: 1, nome: "Alice Silva", idade: 28, cargo: "Desenvolvedora", ativo: true },
-  { id: 2, nome: "Bruno Costa", idade: 34, cargo: "Designer", ativo: false },
-  { id: 3, nome: "Carla Souza", idade: 22, cargo: "Desenvolvedora", ativo: true },
-  { id: 4, nome: "Daniel Oliveira", idade: 40, cargo: "Gerente", ativo: true }
-];
+import { db } from '../utils/db.js';
 
 export const getRoot = (req, res) => {
   res.json({
@@ -19,32 +11,128 @@ export const getRoot = (req, res) => {
 
 export const getUsuarios = (req, res) => {
   const { cargo, idade_max, idade_min, ordem, direcao } = req.query;
-  let resultado = [...usuarios];
-
-  if (ordem) {
-    resultado.sort((a, b) => orderLogic(a, b, ordem, direcao));
-  }
+  
+  let sql = 'SELECT * FROM users WHERE 1=1';
+  const params = [];
 
   if (cargo) {
-    resultado = resultado.filter(u => u.cargo.toLowerCase() === cargo.toLowerCase());
+    sql += ' AND cargo LIKE ?';
+    params.push(`%${cargo}%`);
   }
   if (idade_max) {
-    resultado = resultado.filter(u => u.idade <= parseInt(idade_max));
+    sql += ' AND idade <= ?';
+    params.push(parseInt(idade_max));
   }
   if (idade_min) {
-    resultado = resultado.filter(u => u.idade >= parseInt(idade_min));
+    sql += ' AND idade >= ?';
+    params.push(parseInt(idade_min));
   }
 
-  res.json(resultado);
+  const allowedOrderFields = ['nome', 'idade', 'id'];
+  const sortField = allowedOrderFields.includes(ordem) ? ordem : 'id';
+  const sortDirection = direcao === 'desc' ? 'DESC' : 'ASC';
+  
+  sql += ` ORDER BY ${sortField} ${sortDirection}`;
+
+  try {
+    const usuarios = db.prepare(sql).all(...params);
+    res.json(usuarios);
+  } catch (error) {
+    res.status(500).json({ error: "Erro ao buscar usuários no banco de dados." });
+  }
 };
 
 export const getUsuarioById = (req, res) => {
   const id = parseInt(req.params.id);
-  const usuario = usuarios.find((u) => u.id === id);
-
-  if (!usuario) {
-    return res.status(404).json({ error: "Usuário não encontrado." });
-  }
   
-  res.json(usuario);
+  try {
+    const usuario = db.prepare('SELECT * FROM users WHERE id = ?').get(id);
+
+    if (!usuario) {
+      return res.status(404).json({ error: "Usuário não encontrado." });
+    }
+    
+    res.json(usuario);
+  } catch (error) {
+    res.status(500).json({ error: "Erro ao buscar usuário." });
+  }
+};
+
+export const createUsuario = (req, res) => {
+  const { nome, cargo, idade, ativo } = req.body;
+
+  if (!nome || !cargo || !idade) {
+    return res.status(400).json({ error: "Nome, cargo e idade são obrigatórios." });
+  }
+
+  try {
+    const is_active = ativo !== undefined ? (ativo ? 1 : 0) : 1;
+    const info = db.prepare('INSERT INTO users (nome, cargo, idade, is_active) VALUES (?, ?, ?, ?)').run(
+      nome, 
+      cargo, 
+      parseInt(idade), 
+      is_active
+    );
+    
+    const novoUsuario = {
+      id: info.lastInsertRowid,
+      nome,
+      cargo,
+      idade,
+      is_active
+    };
+
+    res.status(201).json(novoUsuario);
+  } catch (error) {
+    res.status(500).json({ error: "Erro ao criar usuário." });
+  }
+};
+
+export const updateUsuario = (req, res) => {
+  const id = parseInt(req.params.id);
+  const { nome, cargo, idade, ativo } = req.body;
+
+  try {
+    const usuario = db.prepare('SELECT * FROM users WHERE id = ?').get(id);
+    if (!usuario) {
+      return res.status(404).json({ error: "Usuário não encontrado." });
+    }
+
+    const updatedNome = nome || usuario.nome;
+    const updatedCargo = cargo || usuario.cargo;
+    const updatedIdade = idade !== undefined ? parseInt(idade) : usuario.idade;
+    const updatedAtivo = ativo !== undefined ? (ativo ? 1 : 0) : usuario.is_active;
+
+    db.prepare(`
+      UPDATE users 
+      SET nome = ?, cargo = ?, idade = ?, is_active = ?, updated_at = CURRENT_TIMESTAMP 
+      WHERE id = ?
+    `).run(updatedNome, updatedCargo, updatedIdade, updatedAtivo, id);
+
+    res.json({
+      id,
+      nome: updatedNome,
+      cargo: updatedCargo,
+      idade: updatedIdade,
+      is_active: updatedAtivo
+    });
+  } catch (error) {
+    res.status(500).json({ error: "Erro ao atualizar usuário." });
+  }
+};
+
+export const deleteUsuario = (req, res) => {
+  const id = parseInt(req.params.id);
+
+  try {
+    const info = db.prepare('DELETE FROM users WHERE id = ?').run(id);
+
+    if (info.changes === 0) {
+      return res.status(404).json({ error: "Usuário não encontrado." });
+    }
+
+    res.status(204).send();
+  } catch (error) {
+    res.status(500).json({ error: "Erro ao deletar usuário." });
+  }
 };

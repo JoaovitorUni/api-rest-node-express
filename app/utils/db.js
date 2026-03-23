@@ -1,3 +1,7 @@
+import Database from 'better-sqlite3';
+
+const db = new Database('./db.sqlite');
+
 function migrate(db) {
 	const query = `
     CREATE TABLE IF NOT EXISTS users (
@@ -5,7 +9,7 @@ function migrate(db) {
       nome VARCHAR(100) NOT NULL,
       cargo VARCHAR(100) NOT NULL,
       idade INTEGER NOT NULL,
-      is_active INTEGER NOT NULL DEFAULT FALSE,
+      is_active INTEGER NOT NULL DEFAULT TRUE,
       created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
       updated_at TIMESTAMP DEFAULT NULL
     )
@@ -14,18 +18,21 @@ function migrate(db) {
 }
 
 function populate(db) {
+  const count = db.prepare('SELECT COUNT(*) as count FROM users').get().count;
+  if (count > 0) return;
+
 	const data = [
-		{ id: 1, nome: "Teste 1", cargo: "Desenvolvedora", idade: 28, ativo: true },
-		{ id: 2, nome: "Teste 2", cargo: "Designer", idade: 34, ativo: false },
-		{ id: 3, nome: "Teste 3", cargo: "Desenvolvedora", idade: 22, ativo: true },
-		{ id: 4, nome: "Teste 4", cargo: "Gerente", idade: 40, ativo: true }
+		{ nome: "Alice Silva", cargo: "Desenvolvedora", idade: 28, ativo: 1 },
+		{ nome: "Bruno Costa", cargo: "Designer", idade: 34, ativo: 0 },
+		{ nome: "Carla Souza", cargo: "Desenvolvedora", idade: 22, ativo: 1 },
+		{ nome: "Daniel Oliveira", cargo: "Gerente", idade: 40, ativo: 1 }
 	];
 	const query = db.prepare('INSERT INTO users (nome, cargo, idade, is_active) VALUES (?, ?, ?, ?)');
 	db.transaction((data) => {
 		for (const user of data) {
-			query.run(user.nome, user.cargo, user.idade, user.ativo ? 'TRUE' : 'FALSE');
+			query.run(user.nome, user.cargo, user.idade, user.ativo);
 		}
 	})(data);
 }
 
-export { migrate, populate };
+export { db, migrate, populate };
