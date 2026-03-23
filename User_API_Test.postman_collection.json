@@ -1,0 +1,146 @@
+{
+	"info": {
+		"name": "User API",
+		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+	},
+	"item": [
+		{
+			"name": "Criar Usuário",
+			"request": {
+				"method": "POST",
+				"header": [],
+				"body": {
+					"mode": "raw",
+					"raw": "{\n    \"nome\": \"João Silva\",\n    \"cargo\": \"Engenheiro de Software\",\n    \"idade\": 25,\n    \"ativo\": true\n}",
+					"options": {
+						"raw": {
+							"language": "json"
+						}
+					}
+				},
+				"url": {
+					"raw": "http://localhost:3000/api/usuarios",
+					"protocol": "http",
+					"host": ["localhost"],
+					"port": "3000",
+					"path": ["api", "usuarios"]
+				}
+			}
+		},
+		{
+			"name": "Listar Usuários",
+			"request": {
+				"method": "GET",
+				"header": [],
+				"url": {
+					"raw": "http://localhost:3000/api/usuarios",
+					"protocol": "http",
+					"host": ["localhost"],
+					"port": "3000",
+					"path": ["api", "usuarios"]
+				}
+			}
+		},
+		{
+			"name": "Filtrando Usuários",
+			"request": {
+				"method": "GET",
+				"header": [],
+				"url": {
+					"raw": "http://localhost:3000/api/usuarios?cargo=Desenvolvedora&idade_min=25",
+					"protocol": "http",
+					"host": ["localhost"],
+					"port": "3000",
+					"path": ["api", "usuarios"],
+					"query": [
+						{ "key": "cargo", "value": "Desenvolvedora" },
+						{ "key": "idade_min", "value": "25" }
+					]
+				}
+			}
+		},
+		{
+			"name": "Ordenando Usuários",
+			"request": {
+				"method": "GET",
+				"header": [],
+				"url": {
+					"raw": "http://localhost:3000/api/usuarios?ordem=nome&direcao=desc",
+					"protocol": "http",
+					"host": ["localhost"],
+					"port": "3000",
+					"path": ["api", "usuarios"],
+					"query": [
+						{ "key": "ordem", "value": "nome" },
+						{ "key": "direcao", "value": "desc" }
+					]
+				}
+			}
+		},
+		{
+			"name": "Usuário por Id",
+			"request": {
+				"method": "GET",
+				"header": [],
+				"url": {
+					"raw": "http://localhost:3000/api/usuarios/1",
+					"protocol": "http",
+					"host": ["localhost"],
+					"port": "3000",
+					"path": ["api", "usuarios", "1"]
+				}
+			}
+		},
+		{
+			"name": "Atualizar Usuário",
+			"request": {
+				"method": "PUT",
+				"header": [],
+				"body": {
+					"mode": "raw",
+					"raw": "{\n    \"nome\": \"João Silva Atualizado\",\n    \"cargo\": \"Sênior Engenheiro\",\n    \"idade\": 26,\n    \"ativo\": false\n}",
+					"options": {
+						"raw": {
+							"language": "json"
+						}
+					}
+				},
+				"url": {
+					"raw": "http://localhost:3000/api/usuarios/1",
+					"protocol": "http",
+					"host": ["localhost"],
+					"port": "3000",
+					"path": ["api", "usuarios", "1"]
+				}
+			}
+		},
+		{
+			"name": "Deletar Usuário",
+			"request": {
+				"method": "DELETE",
+				"header": [],
+				"url": {
+					"raw": "http://localhost:3000/api/usuarios/3",
+					"protocol": "http",
+					"host": ["localhost"],
+					"port": "3000",
+					"path": ["api", "usuarios", "1"]
+				}
+			}
+		},
+		{
+			"name": "Erro: Usuário Inexistente",
+			"request": {
+				"method": "GET",
+				"header": [],
+				"url": {
+					"raw": "http://localhost:3000/api/usuarios/999",
+					"protocol": "http",
+					"host": ["localhost"],
+					"port": "3000",
+					"path": ["api", "usuarios", "999"]
+				}
+			}
+		}
+	]
+}
