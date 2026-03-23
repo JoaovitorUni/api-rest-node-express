@@ -2,7 +2,7 @@
 
 Endpoints:
 | Rota | Método | Status Retorno |
-| :--- | :--- | :--- | :--- |
+| :--- | :--- | :--- |
 | `/` | GET | 200 |
 | `/api/usuarios` | GET | 200 |
 | `/api/usuarios/:id` | GET | 200 ou 404 |
