@@ -13,7 +13,7 @@ export const getRoot = (req, res) => {
 export const getUsuarios = (req, res) => {
   const { cargo, idade_max, idade_min, ordem, direcao } = req.query;
   
-  let sql = 'SELECT * FROM users WHERE 1=1';
+  let sql = 'SELECT id, nome, cargo, idade, is_active, created_at, updated_at FROM users WHERE 1=1';
   const params = [];
 
   if (cargo) {
@@ -47,7 +47,7 @@ export const getUsuarioById = (req, res) => {
   const id = parseInt(req.params.id);
   
   try {
-    const usuario = db.prepare('SELECT * FROM users WHERE id = ?').get(id);
+    const usuario = db.prepare('SELECT id, nome, cargo, idade, is_active, created_at, updated_at FROM users WHERE id = ?').get(id);
 
     if (!usuario) {
       return res.status(404).json({ error: "Usuário não encontrado." });
