@@ -1,4 +1,10 @@
+import bcrypt from 'bcrypt';
+import jwt from 'jsonwebtoken';
+import { loadEnvFile } from 'node:process';
 import { db } from '../utils/db.js';
+
+loadEnvFile();
+const JWT_SECRET_KEY = process.env.JWT_SECRET_KEY;
 
 export const getRoot = (req, res) => {
   res.json({
@@ -12,7 +18,7 @@ export const getRoot = (req, res) => {
 export const getUsuarios = (req, res) => {
   const { cargo, idade_max, idade_min, ordem, direcao } = req.query;
   
-  let sql = 'SELECT * FROM users WHERE 1=1';
+  let sql = 'SELECT id, nome, cargo, idade, is_active, created_at, updated_at FROM users WHERE 1=1';
   const params = [];
 
   if (cargo) {
@@ -46,7 +52,7 @@ export const getUsuarioById = (req, res) => {
   const id = parseInt(req.params.id);
   
   try {
-    const usuario = db.prepare('SELECT * FROM users WHERE id = ?').get(id);
+    const usuario = db.prepare('SELECT id, nome, cargo, idade, is_active, created_at, updated_at FROM users WHERE id = ?').get(id);
 
     if (!usuario) {
       return res.status(404).json({ error: "Usuário não encontrado." });
@@ -58,19 +64,21 @@ export const getUsuarioById = (req, res) => {
   }
 };
 
-export const createUsuario = (req, res) => {
-  const { nome, cargo, idade, ativo } = req.body;
+export const createUsuario = async (req, res) => {
+  const { nome, senha, cargo, idade, ativo } = req.body;
 
-  if (!nome || !cargo || !idade) {
-    return res.status(400).json({ error: "Nome, cargo e idade são obrigatórios." });
+  if (!nome || !senha || !cargo || !idade) {
+    return res.status(400).json({ error: "Nome, senha, cargo e idade são obrigatórios." });
   }
 
   try {
+    const hashedPassword = await bcrypt.hash(senha, 10);
     const is_active = ativo !== undefined ? (ativo ? 1 : 0) : 1;
-    const info = db.prepare('INSERT INTO users (nome, cargo, idade, is_active) VALUES (?, ?, ?, ?)').run(
-      nome, 
-      cargo, 
-      parseInt(idade), 
+    const info = db.prepare('INSERT INTO users (nome, senha, cargo, idade, is_active) VALUES (?, ?, ?, ?, ?)').run(
+      nome,
+      hashedPassword,
+      cargo,
+      parseInt(idade),
       is_active
     );
     
@@ -88,9 +96,9 @@ export const createUsuario = (req, res) => {
   }
 };
 
-export const updateUsuario = (req, res) => {
+export const updateUsuario = async (req, res) => {
   const id = parseInt(req.params.id);
-  const { nome, cargo, idade, ativo } = req.body;
+  const { nome, senha, cargo, idade, ativo } = req.body;
 
   try {
     const usuario = db.prepare('SELECT * FROM users WHERE id = ?').get(id);
@@ -99,15 +107,16 @@ export const updateUsuario = (req, res) => {
     }
 
     const updatedNome = nome || usuario.nome;
+    const updatedPassword = senha ? await bcrypt.hash(senha, 10) : usuario.senha;
     const updatedCargo = cargo || usuario.cargo;
     const updatedIdade = idade !== undefined ? parseInt(idade) : usuario.idade;
     const updatedAtivo = ativo !== undefined ? (ativo ? 1 : 0) : usuario.is_active;
 
     db.prepare(`
       UPDATE users 
-      SET nome = ?, cargo = ?, idade = ?, is_active = ?, updated_at = CURRENT_TIMESTAMP 
+      SET nome = ?, senha = ?, cargo = ?, idade = ?, is_active = ?, updated_at = CURRENT_TIMESTAMP 
       WHERE id = ?
-    `).run(updatedNome, updatedCargo, updatedIdade, updatedAtivo, id);
+    `).run(updatedNome, updatedPassword, updatedCargo, updatedIdade, updatedAtivo, id);
 
     res.json({
       id,
@@ -134,5 +143,29 @@ export const deleteUsuario = (req, res) => {
     res.status(204).send();
   } catch (error) {
     res.status(500).json({ error: "Erro ao deletar usuário." });
+  }
+};
+
+export const login = async (req, res) => {
+  const { nome, senha } = req.body;
+
+  try {
+    const usuario = db.prepare('SELECT nome, senha FROM users WHERE nome = ?').get(nome);
+    if (!usuario) {
+      return res.status(401).json({ error: "Usuário ou senha inválidos." });
+    }
+    const match = await bcrypt.compare(senha, usuario.senha);
+    if (!match) {
+      return res.status(401).json({ error: "Usuário ou senha inválidos." });
+    }
+
+    const token = jwt.sign(
+      { id: usuario.id, nome: usuario.nome, cargo: usuario.cargo },
+      JWT_SECRET_KEY,
+      { expiresIn: '1h' },
+    );
+    res.json({ auth: true, token });
+  } catch (error) {
+    res.status(500).json({ error: "Erro ao realizar o login." });
   }
 };
