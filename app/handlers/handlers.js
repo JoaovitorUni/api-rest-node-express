@@ -1,5 +1,10 @@
 import bcrypt from 'bcrypt';
+import jwt from 'jsonwebtoken';
+import { loadEnvFile } from 'node:process';
 import { db } from '../utils/db.js';
+
+loadEnvFile();
+const JWT_SECRET_KEY = process.env.JWT_SECRET_KEY;
 
 export const getRoot = (req, res) => {
   res.json({
@@ -138,5 +143,29 @@ export const deleteUsuario = (req, res) => {
     res.status(204).send();
   } catch (error) {
     res.status(500).json({ error: "Erro ao deletar usuário." });
+  }
+};
+
+export const login = async (req, res) => {
+  const { nome, senha } = req.body;
+
+  try {
+    const usuario = db.prepare('SELECT nome, senha FROM users WHERE nome = ?').get(nome);
+    if (!usuario) {
+      return res.status(401).json({ error: "Usuário ou senha inválidos." });
+    }
+    const match = await bcrypt.compare(senha, usuario.senha);
+    if (!match) {
+      return res.status(401).json({ error: "Usuário ou senha inválidos." });
+    }
+
+    const token = jwt.sign(
+      { id: usuario.id, nome: usuario.nome, cargo: usuario.cargo },
+      JWT_SECRET_KEY,
+      { expiresIn: '1h' },
+    );
+    res.json({ auth: true, token });
+  } catch (error) {
+    res.status(500).json({ error: "Erro ao realizar o login." });
   }
 };

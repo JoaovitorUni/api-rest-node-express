@@ -1,5 +1,5 @@
 import express from 'express';
-import { getRoot, getUsuarios, getUsuarioById, createUsuario, updateUsuario, deleteUsuario } from './app/handlers/handlers.js';
+import { getRoot, getUsuarios, getUsuarioById, createUsuario, updateUsuario, deleteUsuario, login } from './app/handlers/handlers.js';
 import { db, migrate, populate } from './app/utils/db.js';
 
 const app = express();
@@ -22,6 +22,8 @@ app.get('/api/usuarios/:id', getUsuarioById);
 app.post('/api/usuarios', createUsuario);
 app.put('/api/usuarios/:id', updateUsuario);
 app.delete('/api/usuarios/:id', deleteUsuario);
+
+app.post('/api/login', login);
 
 app.listen(port, () => {
   console.log(`Servidor rodando em http://localhost:${port}`);
