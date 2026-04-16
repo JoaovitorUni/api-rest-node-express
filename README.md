@@ -41,3 +41,8 @@ npm start
 ```Shell
 curl 127.0.0.1:3000
 ```
+
+5. Executando os Testes:
+```Shell
+npm run test
+```
