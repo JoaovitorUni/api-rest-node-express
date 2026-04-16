@@ -150,7 +150,7 @@ export const login = async (req, res) => {
   const { nome, senha } = req.body;
 
   try {
-    const usuario = db.prepare('SELECT nome, senha FROM users WHERE nome = ?').get(nome);
+    const usuario = db.prepare('SELECT id, nome, senha, cargo FROM users WHERE nome = ?').get(nome);
     if (!usuario) {
       return res.status(401).json({ error: "Usuário ou senha inválidos." });
     }
